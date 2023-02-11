@@ -45,7 +45,9 @@ DMA_HandleTypeDef hdma_adc1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+uint16_t adcRawData[20] ;
+float Temp = 0 ;
+uint16_t VoltMeter = 0 ;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -105,6 +107,35 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  static uint32_t timestamp ;
+	  if(HAL_GetTick() >= timestamp)
+	  {
+		  Temp = 0 ;
+		  VoltMeter = 0;
+		  timestamp = HAL_GetTick() + 1000 ;
+		  register i ;
+		  for(i = 0;i<20;i+=2)
+		  {
+			  Temp += adcRawData[i] ;
+			  if(i == 18)
+			  {
+				  Temp /= 10.0 ;
+				  Temp = (((Temp / 4096.0) * 3.3 - 0.760) / 0.0025) + 25.0 ;
+			  }
+		  }
+		  register j;
+		  for(j = 1;j<21;j+=2)
+		  {
+			  VoltMeter += adcRawData[j] ;
+			  if(j == 19)
+			  {
+				  VoltMeter /= 10 ;
+				  VoltMeter = (VoltMeter / 4096.0) * 5 * 1000 ;
+			  }
+		  }
+	  }
+
+
   }
   /* USER CODE END 3 */
 }
@@ -194,9 +225,9 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_84CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -204,7 +235,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -296,10 +327,20 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_13)
+	{
+	HAL_ADC_Start_DMA(&hadc1, adcRawData, 20);
+	}
+}
 /* USER CODE END 4 */
 
 /**
