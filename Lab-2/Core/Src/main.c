@@ -97,7 +97,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_ADC_Start_DMA(&hadc1, adcRawData, 20);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -120,7 +120,7 @@ int main(void)
 			  if(i == 18)
 			  {
 				  Temp /= 10.0 ;
-				  Temp = (((Temp / 4096.0) * 3.3 - 0.760) / 0.0025) + 25.0 ;
+				  Temp = (((Temp / 4096.0) * 3.3 - 0.760) / 0.0025) + 25.0 +273.0 ;
 			  }
 		  }
 		  register j;
@@ -130,7 +130,7 @@ int main(void)
 			  if(j == 19)
 			  {
 				  VoltMeter /= 10 ;
-				  VoltMeter = (VoltMeter / 4096.0) * 5 * 1000 ;
+				  VoltMeter = (VoltMeter / 3103.0) * 5.0 * 1000 ;
 			  }
 		  }
 	  }
@@ -334,13 +334,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	if(GPIO_Pin == GPIO_PIN_13)
-	{
-	HAL_ADC_Start_DMA(&hadc1, adcRawData, 20);
-	}
-}
+
 /* USER CODE END 4 */
 
 /**
